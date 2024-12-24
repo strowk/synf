@@ -1,0 +1,19 @@
+[package]
+name = "synf"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+inquire = "0.7.5"
+notify-debouncer-full = "0.4.0"
+notify = "6.1.1"
+ctrlc = "3.4.5"
+toml = "0.8.19"
+color-eyre = "0.6"
+eyre = "0.6.12"
+serde = { version = "1.0", features = ["derive"] }
+
+# did as recommended here:
+# https://github.com/eyre-rs/eyre/tree/master/color-eyre
+[profile.dev.package.backtrace]
+opt-level = 3
