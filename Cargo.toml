@@ -12,6 +12,7 @@ toml = "0.8.19"
 color-eyre = "0.6"
 eyre = "0.6.12"
 serde = { version = "1.0", features = ["derive"] }
+crossbeam-channel = "0.5.14"
 
 # did as recommended here:
 # https://github.com/eyre-rs/eyre/tree/master/color-eyre

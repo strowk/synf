@@ -682,6 +682,7 @@ name = "synf"
 version = "0.0.1"
 dependencies = [
  "color-eyre",
+ "crossbeam-channel",
  "ctrlc",
  "eyre",
  "inquire",
