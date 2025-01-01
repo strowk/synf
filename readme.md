@@ -1,6 +1,8 @@
 # synf - hot reload for MCP servers
 
-`synf` is command line tool supporting development of MCP servers by working as a stdio proxy between MCP client and server and hot-reloading the server by rebuilding/restarting and refreshing the states (such as sending list_changed notifications).
+`synf` dan help you developing MCP server by hot reloading it on file changes.
+
+`synf dev` command proxies stdio transport between MCP client and server and hot-reloads the server by rebuilding/restarting and refreshing the states (such as sending list_changed notifications).
 
 ## Development
 
