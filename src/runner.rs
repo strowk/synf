@@ -16,7 +16,7 @@ use eyre::Context;
 use notify_debouncer_full::{new_debouncer, notify::*, DebounceEventResult, FileIdMap};
 
 pub(crate) struct Runner {
-    debouncer: Option<notify_debouncer_full::Debouncer<ReadDirectoryChangesWatcher, FileIdMap>>,
+    debouncer: Option<notify_debouncer_full::Debouncer<RecommendedWatcher, FileIdMap>>,
     process: Option<std::process::Child>,
     path: PathBuf,
     build_command: String,
