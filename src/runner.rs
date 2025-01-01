@@ -13,10 +13,10 @@ use std::{
 use crate::config::{self, Watch};
 use crossbeam_channel::{select, unbounded};
 use eyre::Context;
-use notify_debouncer_full::{new_debouncer, notify::*, DebounceEventResult, FileIdMap};
+use notify_debouncer_full::{new_debouncer, notify::*, DebounceEventResult, RecommendedCache};
 
 pub(crate) struct Runner {
-    debouncer: Option<notify_debouncer_full::Debouncer<RecommendedWatcher, FileIdMap>>,
+    debouncer: Option<notify_debouncer_full::Debouncer<RecommendedWatcher, RecommendedCache>>,
     process: Option<std::process::Child>,
     path: PathBuf,
     build_command: String,
