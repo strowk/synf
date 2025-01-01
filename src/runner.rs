@@ -1,16 +1,17 @@
 use std::{
-    default, env, os,
-    path::{self, Path, PathBuf},
-    process::Stdio,
+    env,
+    io::{stdin, BufRead, BufReader, Write},
+    path::PathBuf,
+    process::{Child, Stdio},
     sync::{
-        atomic::{AtomicBool, Ordering},
-        mpsc, Arc, Mutex,
+        Arc, Mutex,
     },
-    thread,
+    thread::{self},
     time::Duration,
 };
 
 use crate::config::{self, Watch};
+use crossbeam_channel::{select, unbounded};
 use eyre::Context;
 use notify_debouncer_full::{new_debouncer, notify::*, DebounceEventResult, FileIdMap};
 
@@ -21,9 +22,53 @@ pub(crate) struct Runner {
     build_command: String,
     build_args: Vec<String>,
     language: config::Language,
+
+    client_initialize_req: Arc<Mutex<Option<String>>>,
+    process_stopped_sender: Option<crossbeam_channel::Sender<()>>,
+    stdin_receiver: Arc<Mutex<crossbeam_channel::Receiver<String>>>,
 }
 
 impl Runner {
+    fn stop(process: &mut Child) {
+        if process.stdin.is_some() {
+            eprintln!("Closing running process stdin");
+            drop(process.stdin.take());
+            // give it some time to close before killing
+            thread::sleep(Duration::from_secs(2));
+        }
+
+        let should_try_killing: bool;
+        match process.try_wait() {
+            Ok(Some(status)) => {
+                if status.success() {
+                    eprintln!("Process exited successfully");
+                } else {
+                    eprintln!("Process exited with error: {:?}", status);
+                }
+                should_try_killing = false;
+            }
+            Ok(None) => {
+                eprintln!("Process is still running");
+                should_try_killing = true;
+            }
+            Err(e) => {
+                eprintln!("Failed to check if process is closed: {:?}", e);
+                should_try_killing = true;
+            }
+        }
+
+        if should_try_killing {
+            match process.kill() {
+                Ok(_) => {
+                    eprintln!("Killed running process");
+                }
+                Err(e) => {
+                    eprintln!("Failed to kill running process: {:?}", e);
+                }
+            }
+        }
+    }
+
     pub(crate) fn trigger(&mut self) {
         let build_command = self.build_command.clone();
         let build_args = self.build_args.clone();
@@ -36,18 +81,13 @@ impl Runner {
                 {
                     let mut powershell_args = vec![build_command];
                     powershell_args.append(&mut build_args.clone());
-                    (
-                        "powershell.exe".to_string(),
-                        // vec!["-Command".to_string(), command_in_shell],
-                        // build_args,
-                        powershell_args,
-                    )
+                    ("powershell.exe".to_string(), powershell_args)
                 }
             } else {
                 (build_command, build_args)
             };
 
-            println!(
+            eprintln!(
                 "Running build command: {:?} {:?}",
                 build_command, build_args
             );
@@ -58,13 +98,13 @@ impl Runner {
             match status {
                 Ok(status) => {
                     if status.success() {
-                        println!("Build succeeded");
+                        eprintln!("Build succeeded");
                     } else {
-                        println!("Build failed");
+                        eprintln!("Build failed");
                     }
                 }
                 Err(e) => {
-                    println!("Error running build command: {:?}", e);
+                    eprintln!("Error running build command: {:?}", e);
                 }
             }
         }
@@ -73,46 +113,16 @@ impl Runner {
             config::Language::Typescript => ("node", vec!["build/index.js"]),
             config::Language::Python => ("uv", vec!["run"]),
             config::Language::Golang => ("go", vec!["run"]),
+            config::Language::Kotlin => ("./gradlew", vec!["run"]),
         };
 
+        if let Some(stopped_tx) = &mut self.process_stopped_sender {
+            eprintln!("Sending stop to tx");
+            stopped_tx.send(()).unwrap();
+        }
+
         if let Some(process) = &mut self.process {
-            if process.stdin.is_some() {
-                println!("Closing running process stdin");
-                drop(process.stdin.take());
-                // give it some time to close before killing
-                thread::sleep(Duration::from_secs(2));
-            }
-
-            let should_try_killing: bool;
-            match process.try_wait() {
-                Ok(Some(status)) => {
-                    if status.success() {
-                        println!("Process exited successfully");
-                    } else {
-                        println!("Process exited with error: {:?}", status);
-                    }
-                    should_try_killing = false;
-                }
-                Ok(None) => {
-                    println!("Process is still running");
-                    should_try_killing = true;
-                }
-                Err(e) => {
-                    println!("Failed to check if process is closed: {:?}", e);
-                    should_try_killing = true;
-                }
-            }
-
-            if should_try_killing {
-                match process.kill() {
-                    Ok(_) => {
-                        println!("Killed running process");
-                    }
-                    Err(e) => {
-                        println!("Failed to kill running process: {:?}", e);
-                    }
-                }
-            }
+            Self::stop(process);
         }
 
         let run_args = run_args.clone();
@@ -124,12 +134,12 @@ impl Runner {
             (run_command, run_args)
         };
 
-        println!("Running run command: {:?} {:?}", run_command, run_args);
+        eprintln!("Running run command: {:?} {:?}", run_command, run_args);
         let process = std::process::Command::new(run_command)
             .args(run_args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stderr(Stdio::inherit())
             .current_dir(self.path.clone())
             .spawn();
 
@@ -138,10 +148,11 @@ impl Runner {
                 self.process = Some(process);
             }
             Err(e) => {
-                println!("Error running run command: {:?}", e);
+                eprintln!("Error running run command: {:?}", e);
             }
         }
-        println!("Command has started");
+        eprintln!("Command has started");
+        self.run().unwrap();
     }
 
     pub(crate) fn new(path: PathBuf, cfg: config::Config) -> eyre::Result<Arc<Mutex<Self>>> {
@@ -150,10 +161,27 @@ impl Runner {
                 "npm".to_string(),
                 vec!["run".to_string(), "build".to_string()],
             ),
-            // these should do both build and run in run command
+            // these should do both build and run
             config::Language::Python => ("".to_string(), vec![]),
             config::Language::Golang => ("".to_string(), vec![]),
+            config::Language::Kotlin => ("".to_string(), vec![]),
         };
+
+        let (sender, receiver) = unbounded::<String>();
+
+        thread::spawn(move || {
+            for line in stdin().lines() {
+                match line {
+                    Ok(line) => {
+                        sender.send(line).unwrap();
+                    }
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        return;
+                    }
+                }
+            }
+        });
 
         let mut therunner = Runner {
             debouncer: None,
@@ -162,6 +190,10 @@ impl Runner {
             build_command,
             path: path.clone(),
             language: cfg.language.clone(),
+
+            client_initialize_req: Arc::new(Mutex::new(None)),
+            process_stopped_sender: None,
+            stdin_receiver: Arc::new(Mutex::new(receiver)),
         };
 
         therunner.trigger();
@@ -174,11 +206,11 @@ impl Runner {
             None,
             move |result: DebounceEventResult| match result {
                 Ok(events) => events.iter().for_each(|event| {
-                    println!("{event:?}");
+                    eprintln!("{event:?}");
 
                     runner_arc_clone.lock().unwrap().trigger();
                 }),
-                Err(errors) => errors.iter().for_each(|error| println!("{error:?}")),
+                Err(errors) => errors.iter().for_each(|error| eprintln!("{error:?}")),
             },
         )
         .context("failed to create debouncer to watch path")?;
@@ -195,6 +227,12 @@ impl Runner {
                     vec!["src".to_string(), "pyproject.toml".to_string()]
                 } else if cfg.language == config::Language::Golang {
                     vec!["go.mod".to_string()]
+                } else if cfg.language == config::Language::Kotlin {
+                    vec![
+                        "src".to_string(),
+                        "build.gradle.kts".to_string(),
+                        "gradle.properties".to_string(),
+                    ]
                 } else {
                     return Err(eyre::eyre!(format!(
                         "Unsupported language {:?}",
@@ -206,7 +244,7 @@ impl Runner {
 
         for watch_path in default_watch_paths {
             let watch_path = path.join(watch_path);
-            println!("Watching default path {:?}", watch_path);
+            eprintln!("Watching default path {:?}", watch_path);
             debouncer
                 .watch(watch_path.clone(), RecursiveMode::Recursive)
                 .with_context(|| format!("failed to watch default path {:?}", watch_path))?;
@@ -214,24 +252,185 @@ impl Runner {
 
         if let Some(extra_watch_paths) = cfg.watch.and_then(|w| w.extra_watch_paths) {
             for watch_path in extra_watch_paths {
-                println!("Watching extra path {:?}", watch_path);
+                eprintln!("Watching extra path {:?}", watch_path);
                 let watch_path = path.join(watch_path);
                 debouncer
                     .watch(watch_path.clone(), RecursiveMode::Recursive)
                     .with_context(|| format!("failed to watch extra path {:?}", watch_path))?;
             }
         } else {
-            println!("No extra watch paths provided");
+            eprintln!("No extra watch paths provided");
             if cfg.language == config::Language::Golang {
-                println!("Warning: no extra watch paths provided for golang, only watching go.mod, you probably want to add more paths, like internal/, cmd/, etc.");
+                eprintln!("Warning: no extra watch paths provided for golang, only watching go.mod, you probably want to add more paths, like internal/, cmd/, etc.");
             }
         }
         runner_arc.lock().unwrap().debouncer = Some(debouncer);
         Ok(runner_arc)
     }
 
-    pub(crate) fn run(&self) -> eyre::Result<()> {
-        println!("Hello, world!");
+    pub(crate) fn run(&mut self) -> eyre::Result<()> {
+        // firstly wait until we have a running process
+        while self.process.is_none() {
+            // TODO: use channels to wait efficiently
+            eprintln!("Waiting for process to start");
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        let mut process = self.process.take().unwrap();
+        let init_req = self.client_initialize_req.clone();
+
+        let mut process_input = process.stdin.take().unwrap();
+        let process_out = process.stdout.take().unwrap();
+
+        let (sender, stopped_rx) = unbounded::<()>();
+        self.process_stopped_sender = Some(sender);
+
+        let stdin_chan = self.stdin_receiver.clone();
+
+        eprintln!("Starting thread to process IO");
+        thread::spawn(move || {
+            let stdin_chan = stdin_chan.lock().unwrap();
+
+            // phase 1: initialization
+            let mut init_req = init_req.lock().unwrap();
+            let mut received_client_initialize = false;
+            if init_req.is_none() {
+                eprintln!("Waiting for input to initialize");
+                received_client_initialize = true;
+                match stdin_chan.recv() {
+                    Ok(line) => {
+                        *init_req = Some(line);
+                    }
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        return;
+                    }
+                }
+            }
+
+            if let Some(line) = &*init_req {
+                process_input
+                    .write_all(line.as_bytes())
+                    .context("failed to write to process stdin")
+                    .unwrap();
+                process_input
+                    .write_all(b"\n")
+                    .context("failed to write to process stdin")
+                    .unwrap();
+                process_input
+                    .flush()
+                    .context("failed to flush process stdin")
+                    .unwrap();
+            }
+
+            let mut process_out = BufReader::new(process_out);
+            let mut initialize_response = String::new();
+            process_out.read_line(&mut initialize_response).unwrap();
+
+            if received_client_initialize {
+                // send initialization response back to client
+                println!("{}", initialize_response);
+            } else {
+                eprintln!("skipping server initialize response");
+                // we do not need to send initialize again, as client has
+                // already received one from us earlier
+                // but we need to imitate client's initialized notification now
+                process_input
+                    .write(
+                        r####"{"method":"initialized","jsonrpc":"2.0"}
+"####
+                            .as_bytes(),
+                    )
+                    .unwrap();
+
+                // we could check here if list of tools actually changed before sending notification
+                // , however possibility of this optimisation to misfire probably outweights its value
+                //                 process_input
+                //                     .write_all(
+                //                         r####"{"method":"tools/list","jsonrpc":"2.0","params":{}}
+                // "####
+                //                             .as_bytes(),
+                //                     )
+                //                     .unwrap();
+
+                // let mut tools_response = String::new();
+                // process_out.read_line(&mut tools_response).unwrap();
+
+                println!(
+                    "{}",
+                    r####"{"method":"notifications/tools/list_changed","jsonrpc":"2.0"}"####
+                );
+
+                println!(
+                    "{}",
+                    r####"{"method":"notifications/prompts/list_changed","jsonrpc":"2.0"}"####
+                );
+
+                println!(
+                    "{}",
+                    r####"{"method":"notifications/resources/list_changed","jsonrpc":"2.0"}"####
+                );
+            }
+
+            // phase 2: proxying
+            thread::spawn(move || {
+                eprintln!("started stdout processing");
+                for line in process_out.lines() {
+                    match line {
+                        Ok(line) => {
+                            println!("{}", line);
+                        }
+                        Err(e) => {
+                            eprintln!("{}", e);
+                            eprintln!("ended stdout processing");
+                            return;
+                        }
+                    }
+                }
+                eprintln!("exit ended stdout processing");
+            });
+
+            loop {
+                select! {
+                    recv(stopped_rx) -> _ => {
+                        eprintln!("exiting input processing loop by rx");
+                        break;
+                    }
+                    recv(stdin_chan) -> line => {
+                        match line {
+                            Ok(line) => {
+                                process_input
+                                .write_all(line.as_bytes())
+                                .context("failed to write to process stdin")
+                                .unwrap();
+                                process_input
+                                    .write_all(b"\n")
+                                    .context("failed to write to process stdin")
+                                    .unwrap();
+                                process_input
+                                    .flush()
+                                    .context("failed to flush process stdin")
+                                    .unwrap();
+                            }
+                            Err(e)=>{
+                                eprintln!("Failed to get from chan {}", e);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            drop(process_input);
+
+            // give it some time to close before killing
+            thread::sleep(Duration::from_secs(2));
+
+            Self::stop(&mut process);
+
+            eprintln!("Finished proxying");
+        });
+
         Ok(())
     }
 

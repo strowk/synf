@@ -11,6 +11,8 @@ pub (crate) enum Language {
     Python,
     #[serde(rename = "golang")]
     Golang,
+    #[serde(rename="kotlin")]
+    Kotlin,
 }
 
 #[derive(Deserialize)]

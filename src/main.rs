@@ -43,7 +43,7 @@ fn main() -> color_eyre::eyre::Result<()> {
 
     let therunner = runner::Runner::new(path.to_path_buf(), cfg)?;
     // therunner.run()?;
-    therunner.lock().unwrap().run()?;
+    // therunner.lock().unwrap().run()?;
 
 
     let (tx, rx) = mpsc::channel::<()>();
