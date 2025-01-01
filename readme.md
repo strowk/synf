@@ -7,7 +7,7 @@
 Try starting:
 
 ```bash
-cargo run examples/typescript
+cargo run dev examples/typescript
 ```
 
 Then send:
