@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+WIP
+
+## [0.0.1] - 2025-01-01
+
 ### Added
 
 - Initial release.
@@ -17,4 +21,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `synf dev` sends list_updated for tools/prompts/resources after server restart.
 
 <!-- next-url -->
-[Unreleased]: https://github.com/strowk/synf/compare/HEAD...HEAD
+[Unreleased]: https://github.com/strowk/synf/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/strowk/synf/compare/HEAD...v0.0.1
