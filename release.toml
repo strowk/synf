@@ -33,5 +33,5 @@ exactly = 1
 [[pre-release-replacements]]
 file = "CHANGELOG.md"
 search = "<!-- next-url -->"
-replace = "<!-- next-url -->\n[Unreleased]: https://github.com/strowk/tisq/compare/v{{version}}...HEAD"
+replace = "<!-- next-url -->\n[Unreleased]: https://github.com/strowk/synf/compare/v{{version}}...HEAD"
 exactly = 1
