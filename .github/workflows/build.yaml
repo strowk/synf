@@ -1,0 +1,134 @@
+on:
+  schedule:
+    # Run job every third day to ensure that caches won't be deleted
+    - cron:  '5 7 */3 * *'
+  push:
+    braches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # validate:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@master
+  #     - name: Lint changelog
+  #       run: |-
+  #         echo Checking changelog file...
+  #         set -e
+  #         npm ci --prefix changelog --silent
+  #         node changelog/lint.mjs
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - make: build-linux_x86_64
+            target: x86_64-unknown-linux-gnu
+            docker_platform: linux/amd64
+            docker_base: debian
+          - make: build-linux_arm
+            target: aarch64-unknown-linux-gnu
+            docker_platform: linux/arm64
+            docker_base: debian
+          - make: build-linux_x86_64_musl
+            target: x86_64-unknown-linux-musl
+            docker_platform: linux/amd64
+            docker_base: alpine
+          - make: build-linux_arm_musl
+            target: aarch64-unknown-linux-musl
+            docker_platform: linux/arm64
+            docker_base: alpine
+          - make: build-windows_x86_64
+            target: x86_64-pc-windows-gnu
+          - make: build-mac_x86_64
+            target: x86_64-apple-darwin
+            cache: mac_x86_64
+          - make: build-mac_arm
+            target: aarch64-apple-darwin
+            cache: mac_arm
+    steps:
+      - uses: actions/checkout@master
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          key: build-${{matrix.target}}
+          path: |
+            ./target
+            ~/.cargo
+            ./cross
+      - name: Expose GitHub Runtime
+        uses: crazy-max/ghaction-github-runtime@v2
+      # Create target folder beforehand, as otherwise it would be
+      # created from container and would not have right user
+      - run: mkdir -p ./target
+      - run: if ! ( which cargo-make &>/dev/null ) ; then cargo install cargo-make ; fi
+        shell: bash
+      - run: if ! ( which cross &>/dev/null ) ; then cargo make install-cross ; fi
+        shell: bash
+      - run: cargo make ${{ matrix.make }}
+        env:
+          CACHE_TO: type=gha,mode=max,scope=${{ matrix.cache }}
+          CACHE_FROM: type=gha,scope=${{ matrix.cache }}
+      - id: cargo-version
+        if: matrix.docker_platform != null
+        run: cargo make get-version-for-github
+      - name: Set up Docker Buildx
+        if: matrix.docker_platform != null
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        if: matrix.docker_platform != null
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |-
+          shopt -s extglob
+          tar -czf synf-${{ matrix.target }}.tar.gz target/${{ matrix.target }}/release/synf?(.exe)
+      - name: Upload build archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}-build-archive
+          path: synf-${{ matrix.target }}.tar.gz
+          retention-days: 1
+
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    needs: [ build ]
+    # needs: [ build, validate ]
+    steps:
+      - uses: actions/checkout@master
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v3
+      - name: Get version from tag
+        id: tag_name
+        if: >
+          github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo ::set-output name=current_version::${GITHUB_REF#refs/tags/v}
+        shell: bash
+      - name: Read changelog
+        id: changelog-reader
+        if: >
+          github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ steps.tag_name.outputs.current_version }}
+          path: ./CHANGELOG.md
+      - run: mv *-build-archive/*.tar.gz ./
+      - name: Create GitHub release
+        if: >
+          github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.changelog-reader.outputs.changes }}
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/v') && contains(github.ref_name, '-') }}
+          draft: ${{ !startsWith(github.ref, 'refs/tags/v') && steps.changelog-reader.outputs.status == 'unreleased' }}
+          files: |
+            synf-*.tar.gz

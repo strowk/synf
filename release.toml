@@ -1,0 +1,37 @@
+# Disable publishing to crates.io, it is done by GitHub Actions
+publish = false
+
+# Replace Unreleased header with version number and release date in CHANGELOG.md
+[[pre-release-replacements]]
+file = "CHANGELOG.md"
+search = "## \\[Unreleased\\]"
+replace = "## [{{version}}] - {{date}}"
+exactly = 1
+
+# Replace Unreleased link with version number in CHANGELOG.md
+[[pre-release-replacements]]
+file = "CHANGELOG.md"
+search = "\\[Unreleased\\]:"
+replace = "[{{version}}]:"
+exactly = 1
+
+# Add next Unreleased header in CHANGELOG.md
+[[pre-release-replacements]]
+file = "CHANGELOG.md"
+search = "<!-- next-header -->"
+replace = "<!-- next-header -->\n\n## [Unreleased]\n\nWIP"
+exactly = 1
+
+# Replace footer comparison link in CHANGELOG.md
+[[pre-release-replacements]]
+file = "CHANGELOG.md"
+search = "\\.\\.\\.HEAD"
+replace = "...v{{version}}"
+exactly = 1
+
+# Add next Unreleased comparison link in CHANGELOG.md
+[[pre-release-replacements]]
+file = "CHANGELOG.md"
+search = "<!-- next-url -->"
+replace = "<!-- next-url -->\n[Unreleased]: https://github.com/strowk/tisq/compare/v{{version}}...HEAD"
+exactly = 1
