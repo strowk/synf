@@ -14,7 +14,8 @@ In bash shell run:
 curl -s https://raw.githubusercontent.com/strowk/synf/main/install.sh | bash
 ```
 
-Tested on Linux bash and Windows Git Bash. Should work for MacOS too.
+Should work in Linux bash, Windows Git Bash and MacOS.
+For Windows users: you might need to start Git Bash from Administrator.
 
 #### Disabling sudo
 
