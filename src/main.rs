@@ -64,7 +64,7 @@ fn main() -> color_eyre::eyre::Result<()> {
             ctrlc::set_handler(move || tx.send(()).expect("Could not send signal on channel."))
                 .expect("Error setting Ctrl-C handler");
 
-            println!("Use Ctrl-C to exit.");
+            eprintln!("Use Ctrl-C to exit.");
             rx.recv().expect("Could not receive from stopping channel.");
         }
     }

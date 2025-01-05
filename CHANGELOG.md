@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-WIP
+### Fixed
+
+- removed log message from stdout
 
 ## [0.1.0] - 2025-01-05
 
