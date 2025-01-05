@@ -316,7 +316,7 @@ impl Runner {
 
             if received_client_initialize {
                 // send initialization response back to client
-                println!("{}", initialize_response);
+                print!("{}", initialize_response);
             } else {
                 eprintln!("skipping server initialize response");
                 // we do not need to send initialize again, as client has
