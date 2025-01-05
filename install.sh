@@ -68,5 +68,5 @@ ${SUDO_PREFIX} mv "${INSTALL_SOURCE}" "${INSTALL_TARGET}${POSTFIX}"
 rm synf-install/ -r
 rm synf-archive.tgz
 
-echo "synf is installed, checking by running 'synf --version'"
-synf --version
+echo "synf is installed, checking by running 'synf --help'"
+synf --help
