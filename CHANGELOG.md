@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+WIP
+
+## [0.1.0] - 2025-01-05
+
 ### Added
 
 - `synf init` command would bootstrap initial `synf.toml` file.
@@ -23,5 +27,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `synf dev` sends list_updated for tools/prompts/resources after server restart.
 
 <!-- next-url -->
-[Unreleased]: https://github.com/strowk/synf/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/strowk/synf/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/strowk/synf/compare/v0.0.1...v0.1.0
 [0.1.0]: https://github.com/strowk/synf/releases/tag/v0.1.0
