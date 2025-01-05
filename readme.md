@@ -2,7 +2,39 @@
 
 `synf` can help you developing MCP server by hot reloading it on file changes.
 
-`synf dev` command proxies stdio transport between MCP client and server and hot-reloads the server by rebuilding/restarting and refreshing the states (such as sending list_changed notifications).
+It proxies stdio transport between MCP client and server and hot-reloads the server by rebuilding/restarting and refreshing the states (such as sending list_changed notifications).
+
+## Usage
+
+Firstly you would need to initialize synf file using command `synf init` - run this in the folder with your project. It would automatically detect used language and ask confirmation.
+
+Once `synf init` have created `synf.toml` file, command `synf dev` can do following:
+
+- build and run your MCP server
+- wait for the first initialization request from client and cache it
+- watch for changes you make to files configurable within `synf.toml`
+- whenever you change watched files - rebuild and restart your server
+- repeat initialization request that was sent by client the first time
+- notify MCP client to repeat request for tools, prompts and resources
+- drop initialization response from server after restart, to avoid repeating it
+
+You would need to configure the command `synf dev` to be run by client that you want to integrate with your server. Command takes path to folder with your project as first argument.
+
+Here is example for Claude Desktop:
+
+```json
+{
+    "mcpServers": {
+        "synf_test": {
+            "command": "synf",
+            "args": [
+                "dev",
+                "C:/work/synf/examples/typescript"
+            ]
+        }
+    }
+}
+```
 
 ## Installation
 
