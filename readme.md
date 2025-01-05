@@ -41,7 +41,7 @@ Here is example for Claude Desktop:
 ### Windows with [Scoop](https://github.com/ScoopInstaller/Scoop)
 
 ```bash
-scoop install https://raw.githubusercontent.com/strowk/synf/main/scoop-synf.sh
+scoop install https://raw.githubusercontent.com/strowk/synf/main/scoop-synf.json
 ```
 
 ### With bash script
