@@ -4,24 +4,39 @@
 
 `synf dev` command proxies stdio transport between MCP client and server and hot-reloads the server by rebuilding/restarting and refreshing the states (such as sending list_changed notifications).
 
-## Development
+## Installation
 
-Try starting:
+### With bash script
 
-```bash
-cargo run dev examples/typescript
-```
-
-Then send:
-
-```json
-{"method":"initialize", "params":{"protocolVersion":"2024","clientInfo":{"name": "tst","version":"1.0.0"}, "capabilities":{}}, "jsonrpc": "2.0", "id":1}
-
-```
-
-Try running this:
+In bash shell run:
 
 ```bash
-cargo run init examples/typescript
+curl -s https://raw.githubusercontent.com/strowk/synf/main/install.sh | bash
 ```
 
+Tested on Linux bash and Windows Git Bash. Should work for MacOS too.
+
+#### Disabling sudo
+
+By default the script would try to install synf to `/usr/local/bin` and would require sudo rights for that,
+but you can disable this behavior by setting `NO_SUDO` environment variable:
+
+```bash
+curl -s https://raw.githubusercontent.com/strowk/synf/main/install.sh | NO_SUDO=1 bash
+```
+
+Sudo is disabled by default for Windows Git Bash.
+
+### Manually
+
+Head to [latest release](https://github.com/strowk/synf/releases/latest), download archive for your OS/arch, unpack it and put binary somewhere in your PATH.
+
+### From sources
+
+If your system/architecture is not supported by the script above,
+you can install Rust and install synf from sources:
+
+```bash
+git clone https://github.com/strowk/synf
+cargo install --path ./synf
+```
