@@ -38,6 +38,12 @@ Here is example for Claude Desktop:
 
 ## Installation
 
+### Windows with [Scoop](https://github.com/ScoopInstaller/Scoop)
+
+```bash
+scoop install https://raw.githubusercontent.com/strowk/synf/main/scoop-synf.sh
+```
+
 ### With bash script
 
 In bash shell run:
