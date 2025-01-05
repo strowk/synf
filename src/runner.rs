@@ -77,15 +77,6 @@ impl Runner {
 
         // if windows - wrap in cmd shell, otherwise just run
         if !no_build {
-            let (build_command, build_args) = if env::consts::OS == "windows" {
-                {
-                    let mut powershell_args = vec![build_command];
-                    powershell_args.append(&mut build_args.clone());
-                    ("powershell.exe".to_string(), powershell_args)
-                }
-            } else {
-                (build_command, build_args)
-            };
 
             eprintln!(
                 "Running build command: {:?} {:?}",
@@ -121,13 +112,6 @@ impl Runner {
         }
 
         let run_args = run_args.clone();
-        let (run_command, run_args) = if env::consts::OS == "windows" {
-            let mut powershell_args = vec![run_command];
-            powershell_args.append(&mut run_args.clone());
-            ("powershell.exe", powershell_args)
-        } else {
-            (run_command, run_args)
-        };
 
         eprintln!("Running run command: {:?} {:?}", run_command, run_args);
         let process = std::process::Command::new(run_command)
@@ -325,7 +309,7 @@ impl Runner {
                     .context("failed to flush process stdin")
                     .unwrap();
             }
-
+            
             let mut process_out = BufReader::new(process_out);
             let mut initialize_response = String::new();
             process_out.read_line(&mut initialize_response).unwrap();

@@ -23,3 +23,9 @@ Try running this:
 cargo run init examples/typescript
 ```
 
+Using with inspector:
+
+```bash
+npx @modelcontextprotocol/inspector cargo run dev examples/typescript
+```
+
