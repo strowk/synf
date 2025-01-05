@@ -109,12 +109,7 @@ impl Runner {
             }
         }
 
-        let (run_command, run_args) = match self.language {
-            config::Language::Typescript => ("node", vec!["build/index.js"]),
-            config::Language::Python => ("uv", vec!["run"]),
-            config::Language::Golang => ("go", vec!["run"]),
-            config::Language::Kotlin => ("./gradlew", vec!["run"]),
-        };
+        let (run_command, run_args) = Self::get_run_command(&self.language);
 
         if let Some(stopped_tx) = &mut self.process_stopped_sender {
             eprintln!("Sending stop to tx");
@@ -155,17 +150,42 @@ impl Runner {
         self.run().unwrap();
     }
 
-    pub(crate) fn new(path: PathBuf, cfg: config::Config) -> eyre::Result<Arc<Mutex<Self>>> {
-        let (build_command, build_args) = match cfg.language {
+    pub (crate) fn get_run_command(language: &config::Language) -> (&str, Vec<&str>) {
+        match language {
+            config::Language::Typescript => ("node", vec!["build/index.js"]),
+            config::Language::Python => ("uv", vec!["run"]),
+            config::Language::Golang => ("go", vec!["run"]),
+            config::Language::Kotlin => ("./gradlew", vec!["run"]),
+        }
+    }
+
+    pub(crate) fn get_build_command(language: &config::Language) -> (String, Vec<String>) {
+        match language {
             config::Language::Typescript => (
                 "npm".to_string(),
                 vec!["run".to_string(), "build".to_string()],
             ),
-            // these should do both build and run
             config::Language::Python => ("".to_string(), vec![]),
             config::Language::Golang => ("".to_string(), vec![]),
             config::Language::Kotlin => ("".to_string(), vec![]),
-        };
+        }
+    }
+
+    pub(crate) fn get_default_watch_paths(language: &config::Language) -> Vec<String> {
+        match language {
+            config::Language::Typescript => vec!["src".to_string(), "package.json".to_string()],
+            config::Language::Python => vec!["src".to_string(), "pyproject.toml".to_string()],
+            config::Language::Golang => vec!["go.mod".to_string()],
+            config::Language::Kotlin => vec![
+                "src".to_string(),
+                "build.gradle.kts".to_string(),
+                "gradle.properties".to_string(),
+            ],
+        }
+    }
+
+    pub(crate) fn new(path: PathBuf, cfg: config::Config) -> eyre::Result<Arc<Mutex<Self>>> {
+        let (build_command, build_args) = Self::get_build_command(&cfg.language);
 
         let (sender, receiver) = unbounded::<String>();
 
@@ -221,24 +241,7 @@ impl Runner {
                 ..
             }) => configured_default_paths.clone(),
             _ => {
-                if cfg.language == config::Language::Typescript {
-                    vec!["src".to_string(), "package.json".to_string()]
-                } else if cfg.language == config::Language::Python {
-                    vec!["src".to_string(), "pyproject.toml".to_string()]
-                } else if cfg.language == config::Language::Golang {
-                    vec!["go.mod".to_string()]
-                } else if cfg.language == config::Language::Kotlin {
-                    vec![
-                        "src".to_string(),
-                        "build.gradle.kts".to_string(),
-                        "gradle.properties".to_string(),
-                    ]
-                } else {
-                    return Err(eyre::eyre!(format!(
-                        "Unsupported language {:?}",
-                        &cfg.language
-                    )));
-                }
+                Self::get_default_watch_paths(&cfg.language)
             }
         };
 

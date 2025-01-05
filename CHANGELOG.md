@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-WIP
+### Added
+
+- `synf init` command would bootstrap initial `synf.toml` file.
 
 ## [0.0.1] - 2025-01-01
 

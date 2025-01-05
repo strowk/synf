@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{fmt::{Display, Formatter}, path::Path};
 
 use serde::Deserialize;
 use toml;
@@ -13,6 +13,17 @@ pub (crate) enum Language {
     Golang,
     #[serde(rename="kotlin")]
     Kotlin,
+}
+
+impl Display for Language {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Language::Typescript => write!(f, "typescript"),
+            Language::Python => write!(f, "python"),
+            Language::Golang => write!(f, "golang"),
+            Language::Kotlin => write!(f, "kotlin"),
+        }
+    }
 }
 
 #[derive(Deserialize)]
