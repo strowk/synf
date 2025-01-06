@@ -43,7 +43,7 @@ Note: Claude Desktop appears to have a bug at the moment, where it ignores list_
 ### Windows with [Scoop](https://github.com/ScoopInstaller/Scoop)
 
 ```bash
-scoop install https://raw.githubusercontent.com/strowk/synf/main/scoop-synf.json
+scoop install https://raw.githubusercontent.com/strowk/synf/main/scoop/synf.json
 ```
 
 ### With bash script
