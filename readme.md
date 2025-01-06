@@ -36,6 +36,8 @@ Here is example for Claude Desktop:
 }
 ```
 
+Note: Claude Desktop appears to have a bug at the moment, where it ignores list_changed notification that synf is sending and list of tools and their descriptions would not be hot-reloaded when using that client. I expect that they would fix it eventually.
+
 ## Installation
 
 ### Windows with [Scoop](https://github.com/ScoopInstaller/Scoop)
