@@ -132,3 +132,18 @@ jobs:
           draft: ${{ !startsWith(github.ref, 'refs/tags/v') && steps.changelog-reader.outputs.status == 'unreleased' }}
           files: |
             synf-*.tar.gz
+      - name: Update scoop
+        run: bash scoop/update-manifest.sh
+      # commit changes to the repository
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add scoop
+          git commit -m "Update scoop manifest"
+      # push changes to the repository
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.5.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
