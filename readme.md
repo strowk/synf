@@ -17,6 +17,7 @@ Once `synf init` have created `synf.toml` file, command `synf dev` can do follow
 - repeat initialization request that was sent by client the first time
 - notify MCP client to repeat request for tools, prompts and resources
 - drop initialization response from server after restart, to avoid repeating it
+- if configured: cache resource subscriptions and resend them after restart
 
 You would need to configure the command `synf dev` to be run by client that you want to integrate with your server. Command takes path to folder with your project as first argument.
 
@@ -94,7 +95,56 @@ git clone https://github.com/strowk/synf
 cargo install --path ./synf
 ```
 
-## Subscriptions
+## Under the hood
+
+## Initialization
+
+When client connects to server, it sends initialization request that would look f.e like this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "ExampleClient",
+      "version": "1.0.0"
+    }
+  }
+}
+```
+
+`synf` would cache this request and repeat it after server restart, while also dropping the response from server, since the client already received it.
+
+On first run client also would send initialized notification looking like this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/initialized"
+}
+```
+
+When server restarted, `synf` would send same notification to server after initialization response is dropped.
+
+### List Changed
+
+After server restarts, it might have new tools, prompts or resources. 
+
+`synf` would notify client to repeat requests by sending such notifications:
+
+```json
+{"method":"notifications/tools/list_changed","jsonrpc":"2.0"}
+{"method":"notifications/prompts/list_changed","jsonrpc":"2.0"}
+{"method":"notifications/resources/list_changed","jsonrpc":"2.0"}
+```
+
+Note that some clients might be bugged at the moment and would ignore these notifications, so you might need to manually restart them until the client is following specification correctly.
+
+### Subscriptions
 
 The protocol supports optional subscriptions to resource changes. 
 Clients can subscribe to specific resources and receive notifications when they change:
