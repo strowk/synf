@@ -47,7 +47,7 @@ For example Node.js developers would have problems with `npm` since it might be 
 ```toml
 [build]
 command = "powershell"
-args = ["-Command", "npm run build"]
+args = ["npm run build"]
 ```
 
 ## Installation
