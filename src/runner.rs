@@ -1,11 +1,10 @@
 use std::{
+    collections::HashMap,
     env,
     io::{stdin, BufRead, BufReader, Write},
     path::PathBuf,
     process::{Child, Stdio},
-    sync::{
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
     thread::{self},
     time::Duration,
 };
@@ -14,6 +13,7 @@ use crate::config::{self, Watch};
 use crossbeam_channel::{select, unbounded};
 use eyre::Context;
 use notify_debouncer_full::{new_debouncer, notify::*, DebounceEventResult, RecommendedCache};
+use serde::Deserialize;
 
 pub(crate) struct Runner {
     debouncer: Option<notify_debouncer_full::Debouncer<RecommendedWatcher, RecommendedCache>>,
@@ -23,6 +23,8 @@ pub(crate) struct Runner {
     build_args: Vec<String>,
     language: config::Language,
 
+    client_resource_subscriptions: Arc<Mutex<HashMap<String, String>>>,
+    resend_resource_subscriptions: bool,
     client_initialize_req: Arc<Mutex<Option<String>>>,
     process_stopped_sender: Option<crossbeam_channel::Sender<()>>,
     stdin_receiver: Arc<Mutex<crossbeam_channel::Receiver<String>>>,
@@ -77,7 +79,6 @@ impl Runner {
 
         // if windows - wrap in cmd shell, otherwise just run
         if !no_build {
-
             eprintln!(
                 "Running build command: {:?} {:?}",
                 build_command, build_args
@@ -85,6 +86,9 @@ impl Runner {
             let status = std::process::Command::new(build_command)
                 .args(build_args)
                 .current_dir(path)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped()) // todo: handle stderr to provide logs
                 .status();
             match status {
                 Ok(status) => {
@@ -134,7 +138,7 @@ impl Runner {
         self.run().unwrap();
     }
 
-    pub (crate) fn get_run_command(language: &config::Language) -> (&str, Vec<&str>) {
+    pub(crate) fn get_run_command(language: &config::Language) -> (&str, Vec<&str>) {
         match language {
             config::Language::Typescript => ("node", vec!["build/index.js"]),
             config::Language::Python => ("uv", vec!["run"]),
@@ -171,6 +175,14 @@ impl Runner {
     pub(crate) fn new(path: PathBuf, cfg: config::Config) -> eyre::Result<Arc<Mutex<Self>>> {
         let (build_command, build_args) = Self::get_build_command(&cfg.language);
 
+        let (build_command, build_args) = if let Some(custom_build_config) = cfg.build {
+            let command = custom_build_config.command.unwrap_or(build_command);
+            let args = custom_build_config.args.unwrap_or(build_args);
+            (command, args)
+        } else {
+            (build_command, build_args)
+        };
+
         let (sender, receiver) = unbounded::<String>();
 
         thread::spawn(move || {
@@ -195,6 +207,8 @@ impl Runner {
             path: path.clone(),
             language: cfg.language.clone(),
 
+            client_resource_subscriptions: Arc::new(Mutex::new(HashMap::new())),
+            resend_resource_subscriptions: cfg.resend_resource_subscriptions.unwrap_or(false),
             client_initialize_req: Arc::new(Mutex::new(None)),
             process_stopped_sender: None,
             stdin_receiver: Arc::new(Mutex::new(receiver)),
@@ -224,9 +238,7 @@ impl Runner {
                 default_watch_paths: Some(configured_default_paths),
                 ..
             }) => configured_default_paths.clone(),
-            _ => {
-                Self::get_default_watch_paths(&cfg.language)
-            }
+            _ => Self::get_default_watch_paths(&cfg.language),
         };
 
         for watch_path in default_watch_paths {
@@ -274,6 +286,9 @@ impl Runner {
 
         let stdin_chan = self.stdin_receiver.clone();
 
+        let resend_resource_subscriptions = self.resend_resource_subscriptions;
+        let client_resource_subscriptions = self.client_resource_subscriptions.clone();
+
         eprintln!("Starting thread to process IO");
         thread::spawn(move || {
             let stdin_chan = stdin_chan.lock().unwrap();
@@ -309,7 +324,7 @@ impl Runner {
                     .context("failed to flush process stdin")
                     .unwrap();
             }
-            
+
             let mut process_out = BufReader::new(process_out);
             let mut initialize_response = String::new();
             process_out.read_line(&mut initialize_response).unwrap();
@@ -357,6 +372,17 @@ impl Runner {
                     "{}",
                     r####"{"method":"notifications/resources/list_changed","jsonrpc":"2.0"}"####
                 );
+
+                for (_, subscription) in client_resource_subscriptions.lock().unwrap().iter() {
+                    process_input
+                        .write_all(subscription.as_bytes())
+                        .context("failed to write to process stdin")
+                        .unwrap();
+
+                    // skip the responses, since client does not need them
+                    let mut dummy_buffer = String::new();
+                    process_out.read_line(&mut dummy_buffer).unwrap();
+                }
             }
 
             // phase 2: proxying
@@ -386,6 +412,19 @@ impl Runner {
                     recv(stdin_chan) -> line => {
                         match line {
                             Ok(line) => {
+                                if resend_resource_subscriptions {
+                                    if line.contains("resources/subscribe") || line.contains("resources/unsubscribe") {
+                                        let partial: serde_json::Result<PartialJsonRequest> = serde_json::from_str(&line);
+                                        if let Ok(partial) = partial {
+                                            let mut client_resource_subscriptions = client_resource_subscriptions.lock().unwrap();
+                                            if partial.method == "resources/subscribe" {
+                                                client_resource_subscriptions.insert(partial.params.uri.clone(), line.clone());
+                                            } else if partial.method == "resources/unsubscribe" {
+                                                client_resource_subscriptions.remove(&partial.params.uri);
+                                            }
+                                        }
+                                    }
+                                }
                                 process_input
                                 .write_all(line.as_bytes())
                                 .context("failed to write to process stdin")
@@ -426,4 +465,15 @@ impl Runner {
     //         debouncer.stop();
     //     }
     // }
+}
+
+#[derive(Deserialize)]
+struct PartialJsonRequest {
+    pub method: String,
+    pub params: SubscribeParams,
+}
+
+#[derive(Deserialize)]
+struct SubscribeParams {
+    pub uri: String,
 }

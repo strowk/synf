@@ -17,6 +17,11 @@ Then send:
 
 ```
 
+Try sending resource subscriptions:
+```json
+{"jsonrpc":"2.0","id":2,"method":"resources/subscribe","params":{"uri":"file:///project/src/main.ts"}}
+```
+
 Try running this:
 
 ```bash

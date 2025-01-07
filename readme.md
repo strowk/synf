@@ -38,6 +38,18 @@ Here is example for Claude Desktop:
 
 Note: Claude Desktop appears to have a bug at the moment, where it ignores list_changed notification that synf is sending and list of tools and their descriptions would not be hot-reloaded when using that client. I expect that they would fix it eventually.
 
+### Configuration for Windows
+
+If you are using Windows, you might need to configure `synf.toml` to use powershell for running some commands, depending on how programming language is installed for you.
+
+For example Node.js developers would have problems with `npm` since it might be provided as a cmd script rather than an executable. You can configure `synf.toml` to use powershell for running npm:
+
+```toml
+[build]
+command = "powershell"
+args = ["-Command", "npm run build"]
+```
+
 ## Installation
 
 ### Windows with [Scoop](https://github.com/ScoopInstaller/Scoop)
@@ -81,3 +93,36 @@ you can install Rust and install synf from sources:
 git clone https://github.com/strowk/synf
 cargo install --path ./synf
 ```
+
+## Subscriptions
+
+The protocol supports optional subscriptions to resource changes. 
+Clients can subscribe to specific resources and receive notifications when they change:
+
+Subscribe Request:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "resources/subscribe",
+  "params": {
+    "uri": "file:///project/src/main.rs"
+  }
+}
+```
+
+Update Notification:
+
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/resources/updated",
+  "params": {
+    "uri": "file:///project/src/main.rs"
+  }
+}
+```
+
+`synf` can cache the resources subscribed to and would resend the subscriptions to server after restart.

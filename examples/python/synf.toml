@@ -4,6 +4,11 @@
 # Possible values are "typescript", "python", "kotlin" and "golang"
 language = "python"
 
+# Resending resource subscriptions can be enabled to make synf
+# parse all incoming requests and cache any resource subscriptions
+# and later resend them after server restart, defaults to false
+# resend_resource_subscriptions = false
+
 [build]
 # command and args are used to specify the command to build the server after changes.
 # These are the default values for python:
@@ -28,7 +33,7 @@ language = "python"
 # You can override the default paths by specifying them here.
 # These are the paths that are watched by default for python:
 
-default_paths = ["src", "pyproject.toml"]
+# default_paths = ["src", "pyproject.toml"]
 
 # extra_paths are the paths that are watched in addition to the default paths.
 # You can use it to add more paths to watch for changes besides the default paths.

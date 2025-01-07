@@ -8,7 +8,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-WIP
+### Changed
+
+- Build command output is not shown in stderr anymore.
+
+### Fixed
+
+- Sometimes `synf dev` would get stuck on Windows if using powershell for build command.
+
+### Added
+
+- `synf dev` now supports tracking and resending resource subscriptions after server restart.
+- `synf init` now adds comment about resend_resource_subscriptions to `synf.toml` file.
 
 ## [0.1.1] - 2025-01-05
 

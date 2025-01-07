@@ -4,6 +4,11 @@
 # Possible values are "typescript", "python", "kotlin" and "golang"
 language = "kotlin"
 
+# Resending resource subscriptions can be enabled to make synf
+# parse all incoming requests and cache any resource subscriptions
+# and later resend them after server restart, defaults to false
+# resend_resource_subscriptions = false
+
 [build]
 # command and args are used to specify the command to build the server after changes.
 # These are the default values for kotlin:

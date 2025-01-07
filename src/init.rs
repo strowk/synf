@@ -92,7 +92,15 @@ pub(crate) fn run(path: Option<String>) -> eyre::Result<()> {
         }
     }
 
-    conf_buf.push_str("\n\n");
+    conf_buf.push_str("\n");
+
+    conf_buf.push_str(r#"
+# Resending resource subscriptions can be enabled to make synf
+# parse all incoming requests and cache any resource subscriptions
+# and later resend them after server restart, defaults to false
+# resend_resource_subscriptions = false
+
+"#);
 
     conf_buf.push_str(&format!(
         "[build]
