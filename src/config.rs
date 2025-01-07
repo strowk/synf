@@ -1,17 +1,20 @@
-use std::{fmt::{Display, Formatter}, path::Path};
+use std::{
+    fmt::{Display, Formatter},
+    path::Path,
+};
 
 use serde::Deserialize;
 use toml;
 
-#[derive(Deserialize,Debug,PartialEq,Clone)]
-pub (crate) enum Language {
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub(crate) enum Language {
     #[serde(rename = "typescript")]
     Typescript,
     #[serde(rename = "python")]
     Python,
     #[serde(rename = "golang")]
     Golang,
-    #[serde(rename="kotlin")]
+    #[serde(rename = "kotlin")]
     Kotlin,
 }
 
@@ -29,13 +32,14 @@ impl Display for Language {
 #[derive(Deserialize)]
 pub(crate) struct Config {
     pub(crate) language: Language,
-    pub (crate) watch: Option<Watch>,
+    pub(crate) watch: Option<Watch>,
+    pub(crate) resend_resource_subscriptions: Option<bool>,
 }
 
 #[derive(Deserialize)]
-pub (crate) struct Watch {
+pub(crate) struct Watch {
     pub(crate) default_watch_paths: Option<Vec<String>>,
-    pub (crate) extra_watch_paths: Option<Vec<String>>,
+    pub(crate) extra_watch_paths: Option<Vec<String>>,
 }
 
 pub(crate) fn read_from_toml(path: &Path) -> Result<Config, eyre::Report> {

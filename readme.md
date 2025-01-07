@@ -81,3 +81,36 @@ you can install Rust and install synf from sources:
 git clone https://github.com/strowk/synf
 cargo install --path ./synf
 ```
+
+## Subscriptions
+
+The protocol supports optional subscriptions to resource changes. 
+Clients can subscribe to specific resources and receive notifications when they change:
+
+Subscribe Request:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "resources/subscribe",
+  "params": {
+    "uri": "file:///project/src/main.rs"
+  }
+}
+```
+
+Update Notification:
+
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/resources/updated",
+  "params": {
+    "uri": "file:///project/src/main.rs"
+  }
+}
+```
+
+`synf` can cache the resources subscribed to and would resend the subscriptions to server after restart.
