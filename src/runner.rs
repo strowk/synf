@@ -21,6 +21,8 @@ pub(crate) struct Runner {
     path: PathBuf,
     build_command: String,
     build_args: Vec<String>,
+    run_command: String,
+    run_args: Vec<String>,
     language: config::Language,
 
     client_resource_subscriptions: Arc<Mutex<HashMap<String, String>>>,
@@ -138,12 +140,17 @@ impl Runner {
         self.run().unwrap();
     }
 
-    pub(crate) fn get_run_command(language: &config::Language) -> (&str, Vec<&str>) {
+    pub(crate) fn get_run_command(language: &config::Language) -> (String, Vec<String>) {
         match language {
-            config::Language::Typescript => ("node", vec!["build/index.js"]),
-            config::Language::Python => ("uv", vec!["run"]),
-            config::Language::Golang => ("go", vec!["run"]),
-            config::Language::Kotlin => ("./gradlew", vec!["run"]),
+            config::Language::Typescript => {
+                ("node".to_string(), vec!["build/index.js".to_string()])
+            }
+            config::Language::Python => ("uv".to_string(), vec!["run".to_string()]),
+            config::Language::Golang => (
+                "go".to_string(),
+                vec!["run".to_string(), "main.go".to_string()],
+            ),
+            config::Language::Kotlin => ("./gradlew".to_string(), vec!["run".to_string()]),
         }
     }
 
@@ -183,6 +190,16 @@ impl Runner {
             (build_command, build_args)
         };
 
+        let (run_command, run_args) = Self::get_run_command(&cfg.language);
+
+        let (run_command, run_args) = if let Some(custom_run_config) = cfg.run {
+            let command = custom_run_config.command.unwrap_or(run_command);
+            let args = custom_run_config.args.unwrap_or(run_args);
+            (command, args)
+        } else {
+            (run_command, run_args)
+        };
+
         let (sender, receiver) = unbounded::<String>();
 
         thread::spawn(move || {
@@ -204,6 +221,8 @@ impl Runner {
             process: None,
             build_args,
             build_command,
+            run_command,
+            run_args,
             path: path.clone(),
             language: cfg.language.clone(),
 
@@ -235,7 +254,7 @@ impl Runner {
 
         let default_watch_paths = match &cfg.watch {
             Some(Watch {
-                default_watch_paths: Some(configured_default_paths),
+                default_paths: Some(configured_default_paths),
                 ..
             }) => configured_default_paths.clone(),
             _ => Self::get_default_watch_paths(&cfg.language),
@@ -249,7 +268,7 @@ impl Runner {
                 .with_context(|| format!("failed to watch default path {:?}", watch_path))?;
         }
 
-        if let Some(extra_watch_paths) = cfg.watch.and_then(|w| w.extra_watch_paths) {
+        if let Some(extra_watch_paths) = cfg.watch.and_then(|w| w.extra_paths) {
             for watch_path in extra_watch_paths {
                 eprintln!("Watching extra path {:?}", watch_path);
                 let watch_path = path.join(watch_path);

@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-WIP
+### Fixed
+
+- Correctly reading configuration for default_paths and extra_paths.
+- Correctly reading configuration for run command.
 
 ## [0.2.0] - 2025-01-07
 
