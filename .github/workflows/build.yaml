@@ -1,7 +1,7 @@
 on:
-  schedule:
+  # schedule:
     # Run job every third day to ensure that caches won't be deleted
-    - cron:  '5 7 */3 * *'
+    # - cron:  '5 7 */3 * *'
   push:
     braches:
       - main
