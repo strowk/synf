@@ -59,6 +59,12 @@ args = ["npm run build"]
 scoop install https://raw.githubusercontent.com/strowk/synf/main/scoop/synf.json
 ```
 
+, or if you already have it installed with scoop:
+
+```bash
+scoop update synf
+```
+
 ### With bash script
 
 In bash shell run:
