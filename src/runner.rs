@@ -106,7 +106,10 @@ impl Runner {
             }
         }
 
-        let (run_command, run_args) = Self::get_run_command(&self.language);
+        // Use the configured run command and args from the instance
+        // instead of getting the default values again
+        let run_command = self.run_command.clone();
+        let run_args = self.run_args.clone();
 
         if let Some(stopped_tx) = &mut self.process_stopped_sender {
             eprintln!("Sending stop to tx");
@@ -116,8 +119,6 @@ impl Runner {
         if let Some(process) = &mut self.process {
             Self::stop(process);
         }
-
-        let run_args = run_args.clone();
 
         eprintln!("Running run command: {:?} {:?}", run_command, run_args);
         let process = std::process::Command::new(run_command)
