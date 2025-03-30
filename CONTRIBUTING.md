@@ -34,3 +34,14 @@ Using with inspector:
 npx @modelcontextprotocol/inspector cargo run dev examples/typescript
 ```
 
+## Release
+
+To release a new version make sure that CHANGELOG.md is up to date with unreleased changes.
+
+Then to release new version run one of the following commands:
+
+```bash
+cargo release patch --execute
+# or
+cargo release minor --execute
+```
