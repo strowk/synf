@@ -91,7 +91,7 @@ jobs:
           shopt -s extglob
           tar -czf synf-${{ matrix.target }}.tar.gz target/${{ matrix.target }}/release/synf?(.exe)
       - name: Upload build archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-build-archive
           path: synf-${{ matrix.target }}.tar.gz
@@ -105,7 +105,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: Get version from tag
         id: tag_name
         if: >
