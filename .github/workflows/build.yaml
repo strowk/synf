@@ -14,7 +14,7 @@ jobs:
   # validate:
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@master
+  #     - uses: actions/checkout@v4
   #     - name: Lint changelog
   #       run: |-
   #         echo Checking changelog file...
@@ -52,7 +52,7 @@ jobs:
             target: aarch64-apple-darwin
             cache: mac_arm
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
       - name: Cache
         uses: actions/cache@v3
         with:
@@ -103,7 +103,7 @@ jobs:
     needs: [ build ]
     # needs: [ build, validate ]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
       - name: Download all workflow run artifacts
         uses: actions/download-artifact@v4
       - name: Get version from tag
@@ -132,7 +132,7 @@ jobs:
           draft: ${{ !startsWith(github.ref, 'refs/tags/v') && steps.changelog-reader.outputs.status == 'unreleased' }}
           files: |
             synf-*.tar.gz
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
         with:
           ref: main
       - name: Update scoop
