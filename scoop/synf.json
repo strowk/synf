@@ -1,8 +1,8 @@
 {
-    "version":  "0.2.1",
+    "version":  "0.2.2",
     "license":  "MIT",
     "extract_dir":  "target/x86_64-pc-windows-gnu/release",
-    "url":  "https://github.com/strowk/synf/releases/download/v0.2.1/synf-x86_64-pc-windows-gnu.tar.gz",
+    "url":  "https://github.com/strowk/synf/releases/download/v0.2.2/synf-x86_64-pc-windows-gnu.tar.gz",
     "homepage":  "https://github.com/strowk/synf",
     "bin":  "synf.exe"
 }
