@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-WIP
+### Fixed
+
+- Fixed when configuration in `synf.toml` was ignored for run command, by @ezyang.
 
 ## [0.2.1] - 2025-01-08
 
