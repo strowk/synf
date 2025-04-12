@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 WIP
 
+## [0.2.3] - 2025-04-12
+
+WIP
+
 ## [0.2.2] - 2025-03-30
 
 ### Fixed
@@ -63,7 +67,8 @@ WIP
 - `synf dev` sends list_updated for tools/prompts/resources after server restart.
 
 <!-- next-url -->
-[Unreleased]: https://github.com/strowk/synf/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/strowk/synf/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/strowk/synf/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/strowk/synf/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/strowk/synf/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/strowk/synf/compare/v0.1.1...v0.2.0
