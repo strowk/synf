@@ -12,7 +12,7 @@ WIP
 
 ## [0.2.3] - 2025-04-12
 
-WIP
+- bump: crossbeam channel dependency to 0.5.15.
 
 ## [0.2.2] - 2025-03-30
 
