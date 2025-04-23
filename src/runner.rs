@@ -240,14 +240,17 @@ impl Runner {
         let runner_arc_clone = runner_arc.clone();
 
         let mut debouncer = new_debouncer(
-            Duration::from_secs(1),
+            Duration::from_secs(2),
             None,
             move |result: DebounceEventResult| match result {
-                Ok(events) => events.iter().for_each(|event| {
+                Ok(events) => {
+                    events.iter().for_each(|event| {
                     eprintln!("{event:?}");
+                });
 
-                    runner_arc_clone.lock().unwrap().trigger();
-                }),
+                eprintln!("Debouncer triggers reload");
+                runner_arc_clone.lock().unwrap().trigger();
+            },
                 Err(errors) => errors.iter().for_each(|error| eprintln!("{error:?}")),
             },
         )

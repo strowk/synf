@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-WIP
+### Fixed
+
+- Correct debouncing logic to trigger reload only once after multiple changes are detected in the same interval.
 
 ## [0.2.4] - 2025-04-23
 
