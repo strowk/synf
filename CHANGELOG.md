@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+WIP
+
+## [0.2.4] - 2025-04-23
+
 ### Fixed
 
 - Corrected wrong initialized notification.
@@ -69,7 +73,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `synf dev` sends list_updated for tools/prompts/resources after server restart.
 
 <!-- next-url -->
-[Unreleased]: https://github.com/strowk/synf/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/strowk/synf/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/strowk/synf/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/strowk/synf/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/strowk/synf/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/strowk/synf/compare/v0.2.0...v0.2.1
