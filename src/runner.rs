@@ -359,7 +359,7 @@ impl Runner {
                 // but we need to imitate client's initialized notification now
                 process_input
                     .write(
-                        r####"{"method":"initialized","jsonrpc":"2.0"}
+                        r####"{"method":"notifications/initialized","jsonrpc":"2.0"}
 "####
                             .as_bytes(),
                     )
