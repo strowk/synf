@@ -19,10 +19,9 @@ language = "python"
 [run]
 # command and args are used to specify the command to run the server
 # during development after it has been rebuilt
-# These are the default values for python:
 
-# command = "uv"
-# args = ["run"]
+command = "uv"
+args = ["run", "mcp-server-test"]
 
 [watch]
 # Watch configurations are used to specify the files and directories to watch for changes
